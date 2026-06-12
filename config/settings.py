@@ -1,23 +1,15 @@
+import os
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+from dotenv import load_dotenv
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-^0=g_yuzzkpxm9z^d(7h^+^z1p4$+sb6^4+6c=45)!9&4x^9v*"
-
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
 ALLOWED_HOSTS: list = []
 
-
-# Application definition
-
+load_dotenv()
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -27,6 +19,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "users",
     "files",
+    "storages",
 ]
 
 MIDDLEWARE = [
@@ -58,10 +51,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -88,14 +77,46 @@ SESSION_CACHE_ALIAS = "default"
 
 AUTH_PASSWORD_VALIDATORS: list = []
 
-
 LANGUAGE_CODE = "en-us"
-
 TIME_ZONE = "UTC"
-
 USE_I18N = True
-
 USE_TZ = True
 
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
+STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+
+if os.getenv("USE_S3", "False") == "True":
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+            "OPTIONS": {
+                "access_key": os.getenv("MINIO_ACCESS_KEY", "minioadmin"),
+                "secret_key": os.getenv("MINIO_SECRET_KEY", "minioadmin"),
+                "bucket_name": os.getenv("MINIO_BUCKET_NAME", "files-media"),
+                "endpoint_url": os.getenv("MINIO_ENDPOINT", "http://localhost:9000"),
+                "use_ssl": False,
+                "file_overwrite": False,
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+
+    MEDIA_URL = f"{os.getenv('MINIO_ENDPOINT', 'http://localhost:9000')}/files-media/"
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
