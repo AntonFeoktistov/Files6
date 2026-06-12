@@ -11,3 +11,8 @@ dependencies = [
     "psycopg[binary]>=3.3.4",
     "redis>=8.0.0",
 ]
+
+[dependency-groups]
+dev = [
+    "django-stubs[compatible-mypy]>=6.0.5",
+]

@@ -1,0 +1,29 @@
+import re
+
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
+
+
+def validate_character_types(value):
+    letters = len(re.findall(r"[A-Za-z]", value))
+    digits = len(re.findall(r"\d", value))
+
+    if letters < 2 or digits < 2:
+        raise ValidationError(
+            "Пароль должен содержать минимум 2 буквы (латинские) и 2 цифры."
+        )
+
+
+def validate_username_max_length(value):
+    if len(value) > 25:
+        raise ValidationError(
+            _("Имя пользователя не может быть длиннее 25 символов."),
+            code="username_too_long",
+        )
+
+
+def validate_password_max_length(value):
+    if len(value) > 25:
+        raise ValidationError(
+            _("Пароль не может быть длиннее 25 символов."), code="password_too_long"
+        )
