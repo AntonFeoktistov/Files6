@@ -40,13 +40,16 @@ class Folder(models.Model):
 
 
 class File(models.Model):
+    def get_file_upload_path(instance, filename):
+        return f"{instance.user.username}/{instance.folder.get_full_path()}/{instance.name}"
+
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, null=True, blank=True, related_name="files"
     )
     name = models.CharField(max_length=255)
     folder = models.ForeignKey(Folder, on_delete=models.CASCADE, related_name="files")
     full_path = models.CharField(max_length=1024, unique=True, db_index=True)
-    file = models.FileField(upload_to="")
+    file = models.FileField(upload_to=get_file_upload_path)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
