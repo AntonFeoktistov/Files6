@@ -3,83 +3,146 @@
 {% block title %}Главная страница{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1>Загрузка и просмотр файлов</h1>
+<div class="container-fluid mt-4">
+    <h1 class="mb-4">Загрузка и просмотр файлов</h1>
 
-    <!-- Форма загрузки файла -->
-    <div class="card mb-5">
-        <div class="card-header">
-            <h5>Загрузить новый файл</h5>
-        </div>
-        <div class="card-body">
-            <form method="post" enctype="multipart/form-data">
-                {% csrf_token %}
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
-                        {{ form.name }}
-                        {% if form.name.errors %}
-                            <div class="text-danger">{{ form.name.errors }}</div>
-                        {% endif %}
-                    </div>
+    
 
-                    <div class="col-md-4 mb-3">
-                        <label for="{{ form.folder.id_for_label }}" class="form-label">{{ form.folder.label }}</label>
-                        {{ form.folder }}
-                        {% if form.folder.errors %}
-                            <div class="text-danger">{{ form.folder.errors }}</div>
-                        {% endif %}
-                    </div>
+    <!-- Хлебные крошки -->
+    <nav aria-label="breadcrumb" class="mt-2 mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'files:home' current_path=request.user.username %}">
+                    <i class="bi bi-house-door"></i> Корень
+                </a>
+            </li>
+            {% for ancestor in folder.get_ancestors %}
+                <li class="breadcrumb-item">
+                    <a href="{% url 'files:home' current_path=ancestor.full_path %}">
+                        {{ ancestor.name }}
+                    </a>
+                </li>
+            {% endfor %}
+            <li class="breadcrumb-item active" aria-current="page">
+                {{ folder.name }}
+            </li>
+        </ol>
+    </nav>
 
-                    <div class="col-md-4 mb-3">
-                        <label for="{{ form.file.id_for_label }}" class="form-label">{{ form.file.label }}</label>
-                        {{ form.file }}
-                        {% if form.file.errors %}
-                            <div class="text-danger">{{ form.file.errors }}</div>
-                        {% endif %}
-                    </div>
+    <!-- Формы загрузки и создания папки -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body py-2">
+                    <form method="post" enctype="multipart/form-data" action="{% url 'files:home' current_path=current_path %}" class="d-flex gap-2 align-items-end">
+                        {% csrf_token %}
+                        <div class="flex-grow-1">
+                            <label for="{{ form.file.id_for_label }}" class="form-label small mb-1">{{ form.file.label }}</label>
+                            {{ form.file }}
+                            {% if form.file.errors %}
+                                <div class="text-danger small">{{ form.file.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-upload"></i> Загрузить
+                        </button>
+                    </form>
                 </div>
-
-                <button type="submit" class="btn btn-primary">Загрузить файл</button>
-            </form>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body py-2">
+                    <form method="post" action="{% url 'files:create_folder' current_path=current_path %}" class="d-flex gap-2 align-items-end">
+                        {% csrf_token %}
+                        <div class="flex-grow-1">
+                            <label for="{{ folder_form.name.id_for_label }}" class="form-label small mb-1">{{ folder_form.name.label }}</label>
+                            {{ folder_form.name }}
+                            {% if folder_form.name.errors %}
+                                <div class="text-danger small">{{ folder_form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <button type="submit" class="btn btn-outline-success">
+                            <i class="bi bi-folder-plus"></i> Создать
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Список файлов -->
+    <!-- Общий список файлов и папок -->
     <div class="card">
-        <div class="card-header">
-            <h5>Список загруженных файлов</h5>
+        <div class="card-header py-2">
+            <h5 class="mb-0"><i class="bi bi-files"></i> Содержимое папки</h5>
         </div>
-        <div class="card-body">
-            {% if files %}
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Название</th>
-                            <th>Папка</th>
-                            <th>Дата создания</th>
-                            <th>Действия</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for file in files %}
-                        <tr>
-                            <td>{{ file.name }}</td>
-                            <td>{{ file.folder.name }}</td>
-                            <td>{{ file.created_at|date:"d.m.Y H:i" }}</td>
-                            <td>
-                                <a href="{{ file.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
-                                    Открыть
+        <div class="card-body p-0">
+            {% if folder.subfolders.all or folder.files.all %}
+                <div class="list-group list-group-flush">
+                    <!-- Сначала папки -->
+                    {% for subfolder in folder.subfolders.all %}
+                    <div class="list-group-item py-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center flex-grow-1">
+                                <i class="bi bi-folder-fill text-warning me-2" style="font-size: 1.2rem;"></i>
+                                <a href="{% url 'files:home' current_path=subfolder.full_path %}" class="text-decoration-none">
+                                    {{ subfolder.name }}
                                 </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                            </div>
+                            <div class="btn-group btn-group-sm">
+                                <a href="#" class="btn btn-outline-danger" onclick="return confirm('Удалить папку {{ subfolder.name }}?')">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                                <a href="#" class="btn btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <!-- Потом файлы -->
+                    {% for file_item in folder.files.all %}
+                    <div class="list-group-item py-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center flex-grow-1">
+                                <i class="bi bi-file-earmark me-2" style="font-size: 1.2rem;"></i>
+                                <div>
+                                    <span>{{ file_item.name }}</span>
+                                    <small class="text-muted ms-2">{{ file_item.file.size|filesizeformat }}</small>
+                                </div>
+                            </div>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ file_item.file.url }}" class="btn btn-outline-primary" target="_blank">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                <a href="#" class="btn btn-outline-danger" onclick="return confirm('Удалить файл {{ file_item.name }}?')">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                                <a href="#" class="btn btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
             {% else %}
-                <p class="text-muted">Файлы пока не загружены.</p>
+                <div class="text-center py-5">
+                    <i class="bi bi-folder2-open" style="font-size: 3rem; color: #ccc;"></i>
+                    <p class="text-muted mt-2">Папка пуста</p>
+                </div>
             {% endif %}
         </div>
     </div>
 </div>
+
+<style>
+    .list-group-item:hover {
+        background-color: #f8f9fa;
+    }
+    .btn-group .btn {
+        padding: 0.2rem 0.5rem;
+    }
+</style>
 {% endblock %}

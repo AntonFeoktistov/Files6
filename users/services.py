@@ -1,7 +1,11 @@
 import os
 
+from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
+from django.shortcuts import get_object_or_404
 from storages.backends.s3boto3 import S3Boto3Storage
+
+from files.models import Folder
 
 
 class UserFolderService:
@@ -30,6 +34,9 @@ class UserFolderService:
 
             folder_path = self.get_user_folder_path(username)
             marker_path = f"{folder_path}.folder_marker"
+
+            user = get_object_or_404(User, username=username)
+            Folder.objects.create(user=user, name=username, parent=None)
 
             if not storage.exists(marker_path):
                 storage.save(marker_path, ContentFile(b""))
